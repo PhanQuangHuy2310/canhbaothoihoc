@@ -148,6 +148,20 @@ if __name__ == "__main__":
     
     print("Saving model to model.pkl...")
     joblib.dump(pipeline, 'model.pkl')
-    # Save a small sample for default values in the app
-    X.median(numeric_only=True).to_pickle('defaults.pkl')
+    
+    # Save defaults for the app: use 'Binh thuong' class median for Att_ columns
+    # so the app defaults look like a normal/good student, not a mixed average.
+    defaults_df = X.copy()
+    defaults_df['_target'] = y.values
+    num_cols = X.select_dtypes(include=['int64', 'float64']).columns.tolist()
+    
+    # For Att_ columns, use class 0 (Binh thuong) median
+    att_cols = [c for c in num_cols if c.startswith('Att_')]
+    other_num_cols = [c for c in num_cols if not c.startswith('Att_')]
+    
+    good_student_defaults = defaults_df[defaults_df['_target'] == 0][att_cols].median()
+    other_defaults = X[other_num_cols].median()
+    
+    combined_defaults = pd.concat([good_student_defaults, other_defaults])
+    combined_defaults.to_pickle('defaults.pkl')
     print("Done!")
