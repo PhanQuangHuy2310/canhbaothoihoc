@@ -12,8 +12,9 @@ class TextImputer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         return X.fillna("").astype(str).values.ravel()
 
-@st.cache_resource
+@st.cache_resource(show_spinner="Đang tải mô hình...")
 def load_model():
+    # Force cache invalidation by updating this method
     pipeline = joblib.load('model.pkl')
     return pipeline
 
