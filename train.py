@@ -5,6 +5,8 @@ from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import f1_score, classification_report
 from sklearn.model_selection import train_test_split
@@ -102,19 +104,19 @@ def get_pipeline(X_train):
     if 'Personal_Essay' in text_features:
         transformers.append(('text_essay', Pipeline(steps=[('imputer', TextImputer()), ('tfidf', TfidfVectorizer(max_features=300))]), 'Personal_Essay'))
 
+    # RandomForest supports sparse matrices internally, making it much faster.
     preprocessor = ColumnTransformer(transformers=transformers)
-    
-    # To get higher, more polarized probabilities:
-    # 1. Remove class_weight='balanced' (it artificially shifts probabilities towards 0.5 for majority classes).
-    # 2. Let trees grow deep (max_depth=None, min_samples_leaf=1) so pure leaves produce 1.0 or 0.0 probabilities.
-    model = RandomForestClassifier(
-        n_estimators=300, 
+    # We use CalibratedClassifierCV ('sigmoid' scaling) on top to push probabilities out to extremes
+    # since default RF probabilities are often concentrated around 0.5.
+    base_model = RandomForestClassifier(
+        n_estimators=150, 
         random_state=42, 
         n_jobs=-1,
         max_depth=None,
-        min_samples_leaf=1,
-        min_samples_split=2
+        min_samples_leaf=1
     )
+    
+    model = CalibratedClassifierCV(estimator=base_model, method='sigmoid', cv=3)
     
     pipeline = Pipeline(steps=[
         ('preprocessor', preprocessor),
