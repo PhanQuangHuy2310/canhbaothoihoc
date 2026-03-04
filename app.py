@@ -12,9 +12,8 @@ class TextImputer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         return X.fillna("").astype(str).values.ravel()
 
-@st.cache_resource(show_spinner="Đang tải cập nhật mô hình...")
+@st.cache_resource(show_spinner="Đang tải mô hình mới nhất v3...")
 def load_model():
-    # Force cache invalidation again
     pipeline = joblib.load('model.pkl')
     return pipeline
 
@@ -82,20 +81,31 @@ def main():
             prediction = model.predict(df_pred)[0]
             probability = model.predict_proba(df_pred)[0]
             
-            st.markdown("---")
-            if prediction == 0:
-                st.success(f"✅ Dự đoán: **Bình thường (0)**")
-                st.info(f"Xác suất: {probability[0]*100:.2f}%")
-            elif prediction == 1:
-                st.warning(f"⚠️ Dự đoán: **Cảnh báo học vụ (1)**")
-                st.info(f"Xác suất: {probability[1]*100:.2f}%")
-            else:
-                st.error(f"❌ Dự đoán: **Bỏ học (2)**")
-                st.info(f"Xác suất: {probability[2]*100:.2f}%")
-                
-            # Show top inputs for reference
-            with st.expander("📝 Xem dữ liệu đầu vào"):
-                st.json(input_data)
+        st.markdown("---")
+        # model.classes_ gives us the actual class labels in the same order as predict_proba
+        classes = model.classes_
+        pred_idx = list(classes).index(prediction)
+        top_prob = probability[pred_idx] * 100
+        
+        label_map = {0: "✅ Bình thường", 1: "⚠️ Cảnh báo học vụ", 2: "❌ Bỏ học"}
+        label = label_map.get(int(prediction), str(prediction))
+        
+        if prediction == 0:
+            st.success(f"{label}")
+        elif prediction == 1:
+            st.warning(f"{label}")
+        else:
+            st.error(f"{label}")
+            
+        st.metric("Xác suất dự đoán", f"{top_prob:.1f}%")
+        
+        # Show full probability breakdown
+        st.markdown("**Phân phối xác suất toàn bộ:**")
+        prob_df = pd.DataFrame({"Trạng thái": [label_map.get(int(c), str(c)) for c in classes], "Xác suất": [f"{p*100:.1f}%" for p in probability]})
+        st.dataframe(prob_df, hide_index=True)
+        
+        with st.expander("📝 Xem dữ liệu đầu vào"):
+            st.json(input_data)
 
 if __name__ == "__main__":
     main()
