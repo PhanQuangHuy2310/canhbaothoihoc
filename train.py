@@ -71,7 +71,7 @@ class TextImputer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
     def transform(self, X):
-        return X.fillna("").astype(str).squeeze()
+        return X.fillna("").astype(str).values.ravel()
 
 def get_pipeline(X_train):
     numeric_features = X_train.select_dtypes(include=['int64', 'float64']).columns.tolist()

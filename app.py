@@ -10,7 +10,7 @@ class TextImputer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
     def transform(self, X):
-            return X.fillna("").astype(str).squeeze()
+        return X.fillna("").astype(str).values.ravel()
 
 @st.cache_resource
 def load_model():
