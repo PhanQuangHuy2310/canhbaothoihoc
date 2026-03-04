@@ -1,8 +1,16 @@
 import streamlit as st
 import pandas as pd
 import joblib
+from sklearn.base import BaseEstimator, TransformerMixin
 
 st.set_page_config(page_title="Academic Status Prediction", layout="wide")
+
+# This class must be defined here so joblib can find it when loading the model
+class TextImputer(BaseEstimator, TransformerMixin):
+    def fit(self, X, y=None):
+        return self
+    def transform(self, X):
+            return X.fillna("").astype(str).squeeze()
 
 @st.cache_resource
 def load_model():
