@@ -104,7 +104,17 @@ def get_pipeline(X_train):
 
     preprocessor = ColumnTransformer(transformers=transformers)
     
-    model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42, n_jobs=-1)
+    # To get higher, more polarized probabilities:
+    # 1. Remove class_weight='balanced' (it artificially shifts probabilities towards 0.5 for majority classes).
+    # 2. Let trees grow deep (max_depth=None, min_samples_leaf=1) so pure leaves produce 1.0 or 0.0 probabilities.
+    model = RandomForestClassifier(
+        n_estimators=300, 
+        random_state=42, 
+        n_jobs=-1,
+        max_depth=None,
+        min_samples_leaf=1,
+        min_samples_split=2
+    )
     
     pipeline = Pipeline(steps=[
         ('preprocessor', preprocessor),
